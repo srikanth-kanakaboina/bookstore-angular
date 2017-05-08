@@ -1,5 +1,6 @@
 package com.bookstore.service.impl;
 
+import java.util.List;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -9,21 +10,36 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.bookstore.domain.User;
+import com.bookstore.domain.UserBilling;
+import com.bookstore.domain.UserPayment;
+import com.bookstore.domain.UserShipping;
 import com.bookstore.domain.security.UserRole;
 import com.bookstore.repository.RoleRepository;
+import com.bookstore.repository.UserBillingRespository;
+import com.bookstore.repository.UserPaymentRespository;
 import com.bookstore.repository.UserRepository;
+import com.bookstore.repository.UserShippingRespository;
 import com.bookstore.service.UserService;
 
 @Service
 public class UserServiceImpl implements UserService{
 	
-	private static final Logger LOG = LoggerFactory.getLogger(UserService.class);
+	private static final Logger LOG = LoggerFactory.getLogger(UserServiceImpl.class);
 	
 	@Autowired
 	private UserRepository userRepository;
 	
 	@Autowired
 	private RoleRepository roleRepository;
+	
+	@Autowired
+	private UserBillingRespository userBillingRepository;
+	
+	@Autowired
+	private UserPaymentRespository userPaymentRepository;
+	
+	@Autowired 
+	private UserShippingRespository userShippingRespository; 
 	
 	@Transactional
 	public User createUser(User user, Set<UserRole> userRoles) {
@@ -63,4 +79,64 @@ public class UserServiceImpl implements UserService{
 	public User findById(Long id) {
 		return userRepository.findOne(id);
 	}
+
+	@Override
+	public void setUserDefaultPayment(long userPaymentId, User user) {
+	
+		List<UserPayment> userPaymentList=(List<UserPayment>)userPaymentRepository.findAll();
+		for(UserPayment userPayment:userPaymentList){
+			if(userPayment.getId()==userPaymentId){
+				userPayment.setDefaultPayment(true);
+				userPaymentRepository.save(userPayment);
+			}else{
+				userPayment.setDefaultPayment(false);
+				userPaymentRepository.save(userPayment);
+			}
+		}
+	}
+
+	@Override
+	public void updateUserPaymentInfo(UserBilling userBilling, UserPayment userPayment, User user) {
+		save(user);
+		userBillingRepository.save(userBilling);
+		userPaymentRepository.save(userPayment);
+		
+	}
+
+	@Override
+	public void updateUserBilling(UserBilling userBilling, UserPayment userPayment, User user) {
+		userPayment.setUser(user);
+		userPayment.setUserBilling(userBilling);
+		userPayment.setDefaultPayment(true);
+		userBilling.setUserPayment(userPayment);
+		user.getUserPaymentList().add(userPayment);
+		save(user);
+	}
+
+	@Override
+	public void updateUserShipping(UserShipping userShipping, User user) {
+		userShipping.setUser(user);
+		userShipping.setUserShippingDefault(true);
+		user.getUserShippingList().add(userShipping);
+		save(user);
+		
+	}
+	
+	@Override
+	public void setUserDefaultShipping(long userShippingId, User user) {
+	
+		List<UserShipping> userShippingList=(List<UserShipping>)userShippingRespository.findAll();
+		for(UserShipping userShipping:userShippingList){
+			if(userShipping.getId()==userShippingId){
+				userShipping.setUserShippingDefault(true);
+				userShippingRespository.save(userShipping);
+			}else{
+				userShipping.setUserShippingDefault(false);
+				userShippingRespository.save(userShipping);
+			}
+		}
+	}
+
+	
+	
 }
